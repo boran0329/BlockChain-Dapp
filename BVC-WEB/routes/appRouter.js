@@ -5,6 +5,7 @@ var express = require('express');
 var router = express.Router();
 var path = process.cwd();
 var blockFunc = require( path + '/model/blockFunc' );
+var dbFunc = require( path + '/model/dbFunc' );
 var FH = require( path + '/model/funcHandling')
 var view = require( path + '/view/json' );
 
@@ -157,7 +158,6 @@ router.get('/setVote', function(req, res){
     blockFunc.getCheckVoted(placeid, phone, function(err, resd){
         if(!resd){
             blockFunc.setVote(placeid, candidateid, phone, function(_err, _res) {
-                console.log(_err)
                 if(!_err) {
                     view.jsonParsing(200, "success", _res, function(jsonData){
                         res.json(jsonData);
@@ -213,5 +213,53 @@ router.get('/getCounting', function(req, res){
         }
     })
 });
+
+// 7. 인증
+router.get('/isAuth', function(req, res){
+    var token = parseInt(req.param('token'));
+
+    dbFunc.isAuth(token, function(err, result){
+        if(!err){
+            view.jsonParsing(200, result, "", function(jsonData){
+                res.json(jsonData);
+            })
+        } else {
+            view.jsonParsing(400, err, "", function (jsonData) {
+                res.json(jsonData);
+            })
+        }
+    })
+})
+
+// 8. 투표여부
+router.get('/isAction', function(req, res){
+    var token = parseInt(req.param('token'));
+
+    dbFunc.isAction(token, function(err, result){
+        if(!err){
+            view.jsonParsing(200, result, "", function(jsonData){
+                res.json(jsonData);
+            })
+        } else {
+            view.jsonParsing(400, err, "", function (jsonData) {
+                res.json(jsonData);
+            })
+        }
+    })
+})
+
+router.get('/setAuth', function(req, res){
+    var token = req.param('token');
+
+    dbFunc.setAuth(token, function(err, result){
+        if(!err){
+            // 투표 완료
+            console.log(result);
+        } else {
+            // 실패
+            console.log(err);
+        }
+    })
+})
 
 module.exports = router;

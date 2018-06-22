@@ -85,15 +85,13 @@ contract BVC {
     }
 
     // 전화번호가 중복인지 체크하는 함수           phone number check
-    function getCheckVoted(uint _placeID, uint _phone) constant returns(bool) {
+    function getCheckVoted(uint _placeID, string _phone) constant returns(bool) {
         for (uint i = 0; i < voterList.length; i++) {
-            if (voterList[i].phone == _phone) {
-                if (voterList[i].votedPlace == _placeID) {
-                    return true;
-                }
+            if (keccak256(voterList[i].phone) == keccak256(_phone) && voterList[i].votedPlace == _placeID) {
+                return (true);
             }
         }
-        return false;
+        return (false);
     }
 
     // 투표를 시작하도록 하는 함수

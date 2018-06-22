@@ -25,26 +25,37 @@ class PromiseViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = true
         setupViews()
-        
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        tabBarController?.tabBar.isHidden = false
     }
     
     func setupViews() {
         title = "공약보기"
         self.view.backgroundColor = .white
-        tabBarController?.tabBar.isHidden = true
+        
         webView.delegate = self
         view.addSubview(agreeBtn)
         view.addSubview(webView)
         
         let index = UserDefaults.standard.getSelectedIndex()
-        print("index : \(index)")
-        if let url = URL(string: candidateInfo[index].pdfURL) {
-            let request = URLRequest(url: url)
-            webView.loadRequest(request)
-            appDelegate.isshowActivityIndicatory()
+        appDelegate.isshowActivityIndicatory()
+        
+        guard let url = URL(string: candidateInfo[index].pdfURL) else {
+            appDelegate.showAlert("pdf를 불러올 수 없습니다.")
+            return
         }
+        
+        let request = URLRequest(url: url)
+        webView.loadRequest(request)
         
         webView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
         webView.leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
@@ -63,7 +74,7 @@ class PromiseViewController: UIViewController {
               let candidateid = userInfo.selectCandidateid,
               let phone = userInfo.phone,
               let name = userInfo.name else {
-                let alert = UIAlertController(title: nil, message: "잘못된 경로입니다.", preferredStyle: .alert)
+                let alert = UIAlertController(title: nil, message: "다시 인증해주세요", preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "확인", style: .cancel, handler: nil))
                 self.present(alert, animated: true, completion: nil)
                 return
@@ -71,12 +82,21 @@ class PromiseViewController: UIViewController {
         
         let alert = UIAlertController(title: "투표하시겠습니까?", message: "\(name)이 맞습니까?", preferredStyle: .alert)
         let okAction = UIAlertAction(title: "예", style: .default) { (_) in
-            let apiClient = APIClient()
-            apiClient.setVote(placeid: placeid, candidateid: candidateid, phone: phone) { response in
-                userInfo.transactionAddress = response
-            }
             
-            self.navigationController?.pushViewController(EndViewController(), animated: true)
+            let apiClient = APIClient()
+            apiClient.isAction(token: phone) { isAction in
+                print(isAction)
+                
+                if(isAction){
+                    apiClient.setVote(placeid: placeid, candidateid: candidateid, phone: phone) { response in
+                        userInfo.transactionAddress = response
+                        apiClient.setAuth(token: phone)
+                        self.navigationController?.pushViewController(EndViewController(), animated: true)
+                    }
+                } else {
+                    self.appDelegate.showAlert("잘못된 토큰입니다.")
+                }
+            }
         }
         let noAction = UIAlertAction(title: "아니요", style: .cancel, handler: nil)
         alert.addAction(okAction)
